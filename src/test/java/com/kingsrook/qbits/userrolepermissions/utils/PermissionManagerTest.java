@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -199,6 +200,7 @@ class PermissionManagerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   @Disabled
    void testUpdatesToRolePermissionInt()
    {
       // todo wip like, insert rpi for a, then move it to be, then move to another role (and user should lose it), then move back and they should get it again
