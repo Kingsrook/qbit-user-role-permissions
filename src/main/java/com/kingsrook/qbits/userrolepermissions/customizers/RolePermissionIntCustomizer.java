@@ -22,13 +22,16 @@
 package com.kingsrook.qbits.userrolepermissions.customizers;
 
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qbits.userrolepermissions.model.UserRoleInt;
 import com.kingsrook.qbits.userrolepermissions.utils.PermissionManager;
+import com.kingsrook.qqq.backend.core.actions.customizers.RecordCustomizerUtilityInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -40,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -47,9 +51,6 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public class RolePermissionIntCustomizer implements TableCustomizerInterface
 {
-   private Set<Integer> userIdsPreUpdate;
-
-
 
    /***************************************************************************
     **
@@ -57,22 +58,32 @@ public class RolePermissionIntCustomizer implements TableCustomizerInterface
    @Override
    public List<QRecord> postInsert(InsertInput insertInput, List<QRecord> records) throws QException
    {
-      Set<Integer> userIds = getUserIdsForRolePermissionIntRecords(records);
-
-      PermissionManager.getInstance().flushCacheForUpdatedUserIds(userIds);
+      Set<Integer> userIds = getUserIdsForRolePermissionIntRecords(records, Optional.empty());
+      // PermissionManager.getInstance().flushCacheForUpdatedUserIds(userIds);
       return (records);
    }
 
 
 
    /***************************************************************************
-    **
+    ** get all the roleIds from the rolePermissionInts in the input list -
+    ** noting that, if we're doing updates, we can look in oldRecordMap for
+    ** the values (e.g., if an update is only changing permissionId, not roleId) -
+    ** then look up the users for those roles.
     ***************************************************************************/
-   private static Set<Integer> getUserIdsForRolePermissionIntRecords(List<QRecord> records) throws QException
+   private static Set<Integer> getUserIdsForRolePermissionIntRecords(List<QRecord> records, Optional<Map<Serializable, QRecord>> oldRecordMap) throws QException
    {
-      Set<Integer>  roleIds      = CollectionUtils.nonNullList(records).stream().map(r -> r.getValueInteger("roleId")).collect(Collectors.toSet());
-      List<QRecord> userRoleInts = QueryAction.execute(UserRoleInt.TABLE_NAME, new QQueryFilter(new QFilterCriteria("roleId", QCriteriaOperator.IN, roleIds)));
-      Set<Integer>  userIds      = userRoleInts.stream().map(r -> r.getValueInteger("userId")).collect(Collectors.toSet());
+      Set<Object> roleIds = CollectionUtils.nonNullList(records).stream()
+         .map(r -> RecordCustomizerUtilityInterface.getValueFromRecordOrOldRecord("roleId", r, r.getValueInteger("id"), oldRecordMap))
+         .collect(Collectors.toSet());
+
+      List<QRecord> userRoleInts = QueryAction.execute(UserRoleInt.TABLE_NAME, new QQueryFilter(new QFilterCriteria("roleId", QCriteriaOperator.IN, roleIds.stream()
+         .map(i -> ValueUtils.getValueAsInteger(i))
+         .toList())));
+
+      Set<Integer> userIds = userRoleInts.stream()
+         .map(r -> r.getValueInteger("userId"))
+         .collect(Collectors.toSet());
 
       return userIds;
    }
@@ -83,29 +94,20 @@ public class RolePermissionIntCustomizer implements TableCustomizerInterface
     **
     ***************************************************************************/
    @Override
-   public List<QRecord> preUpdate(UpdateInput updateInput, List<QRecord> records, boolean isPreview, Optional<List<QRecord>> oldRecordList) throws QException
-   {
-      if(oldRecordList.isPresent())
-      {
-         this.userIdsPreUpdate = getUserIdsForRolePermissionIntRecords(oldRecordList.get());
-      }
-
-      return (records);
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @Override
    public List<QRecord> postUpdate(UpdateInput updateInput, List<QRecord> records, Optional<List<QRecord>> oldRecordList) throws QException
    {
-      Set<Integer> userIds = getUserIdsForRolePermissionIntRecords(records);
-      if(userIdsPreUpdate != null)
+      Optional<Map<Serializable, QRecord>> oldRecordMap = Optional.empty();
+      if(oldRecordList.isPresent())
+      {
+         oldRecordMap = Optional.of(oldRecordList.get().stream().collect(Collectors.toMap(r -> r.getValueInteger("id"), r -> r)));
+      }
+
+      Set<Integer> userIds = getUserIdsForRolePermissionIntRecords(records, oldRecordMap);
+
+      if(oldRecordList.isPresent())
       {
          userIds = new HashSet<>(userIds);
-         userIds.addAll(userIdsPreUpdate);
+         userIds.addAll(getUserIdsForRolePermissionIntRecords(oldRecordList.get(), Optional.empty()));
       }
 
       PermissionManager.getInstance().flushCacheForUpdatedUserIds(userIds);
@@ -121,7 +123,7 @@ public class RolePermissionIntCustomizer implements TableCustomizerInterface
    @Override
    public List<QRecord> postDelete(DeleteInput deleteInput, List<QRecord> records) throws QException
    {
-      Set<Integer> userIds = getUserIdsForRolePermissionIntRecords(records);
+      Set<Integer> userIds = getUserIdsForRolePermissionIntRecords(records, Optional.empty());
 
       PermissionManager.getInstance().flushCacheForUpdatedUserIds(userIds);
       return (records);

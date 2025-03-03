@@ -41,9 +41,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import org.apache.commons.lang.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -175,7 +173,6 @@ class PermissionManagerTest extends BaseTest
 
       Integer roleIdB              = insertRole("Test B");
       Integer rolePermissionIntIdB = insertRolePermissionInt(roleIdB, permissionMap.get("b"));
-
       assertEquals(Set.of("a"), permissionManager.getEffectivePermissionsForUser(userId1));
 
       /////////////////////////////////////////
@@ -200,11 +197,38 @@ class PermissionManagerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   @Disabled
-   void testUpdatesToRolePermissionInt()
+   void testUpdatesToRolePermissionInt() throws QException
    {
-      // todo wip like, insert rpi for a, then move it to be, then move to another role (and user should lose it), then move back and they should get it again
-      throw (new NotImplementedException("Not yet implemented"));
+      Map<String, Integer> permissionMap = insertPermissions();
+      Integer              userId1       = insertUser("test1");
+      Integer              userId2       = insertUser("test2");
+      Integer              roleIdA       = insertRole("Test A");
+      Integer              roleIdB       = insertRole("Test B");
+
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForUser(userId1));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForUser(userId2));
+
+      insertUserRoleInt(userId1, roleIdA);
+      insertUserRoleInt(userId2, roleIdB);
+      Integer rolePermissionIntId = insertRolePermissionInt(roleIdA, permissionMap.get("a"));
+      assertEquals(Set.of("a"), permissionManager.getEffectivePermissionsForUser(userId1));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForUser(userId2));
+
+      //////////////////////////////////////////////
+      // switch the int to a different permission //
+      //////////////////////////////////////////////
+      new UpdateAction().execute(new UpdateInput(RolePermissionInt.TABLE_NAME).withRecord(new RolePermissionInt()
+         .withId(rolePermissionIntId).withPermissionId(permissionMap.get("b")).toQRecordOnlyChangedFields(true)));
+      assertEquals(Set.of("b"), permissionManager.getEffectivePermissionsForUser(userId1));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForUser(userId2));
+
+      ////////////////////////////////////////////////////////////////////////
+      // move the permission to a different role - our user1 should lose it //
+      ////////////////////////////////////////////////////////////////////////
+      new UpdateAction().execute(new UpdateInput(RolePermissionInt.TABLE_NAME).withRecord(new RolePermissionInt()
+         .withId(rolePermissionIntId).withRoleId(roleIdB).toQRecordOnlyChangedFields(true)));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForUser(userId1));
+      assertEquals(Set.of("b"), permissionManager.getEffectivePermissionsForUser(userId2));
    }
 
 
