@@ -59,7 +59,11 @@ public class RolePermissionIntCustomizer implements TableCustomizerInterface
    public List<QRecord> postInsert(InsertInput insertInput, List<QRecord> records) throws QException
    {
       Set<Integer> userIds = getUserIdsForRolePermissionIntRecords(records, Optional.empty());
-      // PermissionManager.getInstance().flushCacheForUpdatedUserIds(userIds);
+      PermissionManager.getInstance().flushCacheForUpdatedUserIds(userIds);
+
+      Set<Integer> roleIds = getRoleIdsForRolePermissionIntRecords(records, Optional.empty());
+      PermissionManager.getInstance().flushCacheForUpdatedRoleIds(roleIds);
+
       return (records);
    }
 
@@ -73,13 +77,9 @@ public class RolePermissionIntCustomizer implements TableCustomizerInterface
     ***************************************************************************/
    private static Set<Integer> getUserIdsForRolePermissionIntRecords(List<QRecord> records, Optional<Map<Serializable, QRecord>> oldRecordMap) throws QException
    {
-      Set<Object> roleIds = CollectionUtils.nonNullList(records).stream()
-         .map(r -> RecordCustomizerUtilityInterface.getValueFromRecordOrOldRecord("roleId", r, r.getValueInteger("id"), oldRecordMap))
-         .collect(Collectors.toSet());
+      Set<Integer> roleIds = getRoleIdsForRolePermissionIntRecords(records, oldRecordMap);
 
-      List<QRecord> userRoleInts = QueryAction.execute(UserRoleInt.TABLE_NAME, new QQueryFilter(new QFilterCriteria("roleId", QCriteriaOperator.IN, roleIds.stream()
-         .map(i -> ValueUtils.getValueAsInteger(i))
-         .toList())));
+      List<QRecord> userRoleInts = QueryAction.execute(UserRoleInt.TABLE_NAME, new QQueryFilter(new QFilterCriteria("roleId", QCriteriaOperator.IN, roleIds)));
 
       Set<Integer> userIds = userRoleInts.stream()
          .map(r -> r.getValueInteger("userId"))
@@ -91,26 +91,43 @@ public class RolePermissionIntCustomizer implements TableCustomizerInterface
 
 
    /***************************************************************************
+    ** get all the roleIds from the rolePermissionInts in the input list -
+    ** noting that, if we're doing updates, we can look in oldRecordMap for
+    ** the values (e.g., if an update is only changing permissionId, not roleId).
+    ***************************************************************************/
+   private static Set<Integer> getRoleIdsForRolePermissionIntRecords(List<QRecord> records, Optional<Map<Serializable, QRecord>> oldRecordMap) throws QException
+   {
+      Set<Integer> roleIds = CollectionUtils.nonNullList(records).stream()
+         .map(r -> ValueUtils.getValueAsInteger(RecordCustomizerUtilityInterface.getValueFromRecordOrOldRecord("roleId", r, r.getValueInteger("id"), oldRecordMap)))
+         .collect(Collectors.toSet());
+
+      return (roleIds);
+   }
+
+
+
+   /***************************************************************************
     **
     ***************************************************************************/
    @Override
    public List<QRecord> postUpdate(UpdateInput updateInput, List<QRecord> records, Optional<List<QRecord>> oldRecordList) throws QException
    {
-      Optional<Map<Serializable, QRecord>> oldRecordMap = Optional.empty();
-      if(oldRecordList.isPresent())
-      {
-         oldRecordMap = Optional.of(oldRecordList.get().stream().collect(Collectors.toMap(r -> r.getValueInteger("id"), r -> r)));
-      }
+      Optional<Map<Serializable, QRecord>> oldRecordMap = oldRecordListToMap("id", oldRecordList);
 
       Set<Integer> userIds = getUserIdsForRolePermissionIntRecords(records, oldRecordMap);
+      Set<Integer> roleIds = getRoleIdsForRolePermissionIntRecords(records, oldRecordMap);
 
       if(oldRecordList.isPresent())
       {
          userIds = new HashSet<>(userIds);
          userIds.addAll(getUserIdsForRolePermissionIntRecords(oldRecordList.get(), Optional.empty()));
+
+         roleIds = new HashSet<>(roleIds);
+         roleIds.addAll(getRoleIdsForRolePermissionIntRecords(oldRecordList.get(), Optional.empty()));
       }
 
       PermissionManager.getInstance().flushCacheForUpdatedUserIds(userIds);
+      PermissionManager.getInstance().flushCacheForUpdatedRoleIds(roleIds);
 
       return (records);
    }
@@ -124,8 +141,11 @@ public class RolePermissionIntCustomizer implements TableCustomizerInterface
    public List<QRecord> postDelete(DeleteInput deleteInput, List<QRecord> records) throws QException
    {
       Set<Integer> userIds = getUserIdsForRolePermissionIntRecords(records, Optional.empty());
-
       PermissionManager.getInstance().flushCacheForUpdatedUserIds(userIds);
+
+      Set<Integer> roleIds = getRoleIdsForRolePermissionIntRecords(records, Optional.empty());
+      PermissionManager.getInstance().flushCacheForUpdatedRoleIds(roleIds);
+
       return (records);
    }
 

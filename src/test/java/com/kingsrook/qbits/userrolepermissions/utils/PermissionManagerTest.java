@@ -22,6 +22,7 @@
 package com.kingsrook.qbits.userrolepermissions.utils;
 
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,6 +63,19 @@ class PermissionManagerTest extends BaseTest
    void beforeEach()
    {
       permissionManager.flushAllCache();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNullAndEmptyInputs() throws QException
+   {
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForUser(null));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForRoles(null));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForRoles(Collections.emptySet()));
    }
 
 
@@ -229,6 +243,76 @@ class PermissionManagerTest extends BaseTest
          .withId(rolePermissionIntId).withRoleId(roleIdB).toQRecordOnlyChangedFields(true)));
       assertEquals(Set.of(), permissionManager.getEffectivePermissionsForUser(userId1));
       assertEquals(Set.of("b"), permissionManager.getEffectivePermissionsForUser(userId2));
+   }
+
+
+
+   /*******************************************************************************
+    ** commenting out the flushCacheForUpdatedUserIds in RolePermissionIntCustomizer
+    ** postInsert wasn't failing until this test was added.
+    *******************************************************************************/
+   @Test
+   void testInsertingUserRoleIntRequiresCacheFlush() throws QException
+   {
+      Map<String, Integer> permissionMap = insertPermissions();
+      Integer              userId1       = insertUser("test1");
+      Integer              roleIdA       = insertRole("Test A");
+      Integer              roleIdB       = insertRole("Test B");
+
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForUser(userId1));
+
+      insertUserRoleInt(userId1, roleIdA);
+      insertUserRoleInt(userId1, roleIdB);
+
+      insertRolePermissionInt(roleIdA, permissionMap.get("a"));
+      assertEquals(Set.of("a"), permissionManager.getEffectivePermissionsForUser(userId1));
+
+      insertRolePermissionInt(roleIdB, permissionMap.get("b"));
+      assertEquals(Set.of("a", "b"), permissionManager.getEffectivePermissionsForUser(userId1));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetPermissionsForRoleIds() throws QException
+   {
+      Map<String, Integer> permissionMap = insertPermissions();
+      Integer              roleIdA       = insertRole("Test A");
+      Integer              roleIdB       = insertRole("Test B");
+      Integer              roleIdC       = insertRole("Test C");
+
+      Set<Integer> setA   = Set.of(roleIdA);
+      Set<Integer> setBC  = Set.of(roleIdB, roleIdC);
+      Set<Integer> setABC = Set.of(roleIdA, roleIdB, roleIdC);
+
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForRoles(setA));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForRoles(setBC));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForRoles(setABC));
+
+      Integer rolePermissionIntId = insertRolePermissionInt(roleIdA, permissionMap.get("a"));
+      assertEquals(Set.of("a"), permissionManager.getEffectivePermissionsForRoles(setA));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForRoles(setBC));
+      assertEquals(Set.of("a"), permissionManager.getEffectivePermissionsForRoles(setABC));
+
+      new UpdateAction().execute(new UpdateInput(RolePermissionInt.TABLE_NAME).withRecord(new RolePermissionInt()
+         .withId(rolePermissionIntId).withPermissionId(permissionMap.get("b")).toQRecordOnlyChangedFields(true)));
+      assertEquals(Set.of("b"), permissionManager.getEffectivePermissionsForRoles(setA));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForRoles(setBC));
+      assertEquals(Set.of("b"), permissionManager.getEffectivePermissionsForRoles(setABC));
+
+      new UpdateAction().execute(new UpdateInput(RolePermissionInt.TABLE_NAME).withRecord(new RolePermissionInt()
+         .withId(rolePermissionIntId).withRoleId(roleIdB).toQRecordOnlyChangedFields(true)));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForRoles(setA));
+      assertEquals(Set.of("b"), permissionManager.getEffectivePermissionsForRoles(setBC));
+      assertEquals(Set.of("b"), permissionManager.getEffectivePermissionsForRoles(setABC));
+
+      new DeleteAction().execute(new DeleteInput(RolePermissionInt.TABLE_NAME).withPrimaryKey(rolePermissionIntId));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForRoles(setA));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForRoles(setBC));
+      assertEquals(Set.of(), permissionManager.getEffectivePermissionsForRoles(setABC));
    }
 
 

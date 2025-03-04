@@ -24,7 +24,11 @@ package com.kingsrook.qbits.userrolepermissions.utils;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qbits.userrolepermissions.model.Permission;
@@ -60,6 +64,10 @@ public class PermissionManager
    private Memoization<Integer, Set<String>> getEffectivePermissionsForUserMemoization = new Memoization<Integer, Set<String>>()
       .withTimeout(Duration.ofMinutes(5));
 
+   private Memoization<Set<Integer>, Set<String>> getEffectivePermissionsForRolesMemoization = new Memoization<Set<Integer>, Set<String>>()
+      .withTimeout(Duration.ofMinutes(5));
+
+   private Map<Integer, Set<Set<Integer>>> roleIdToRoleSetIds = Collections.synchronizedMap(new HashMap<>());
 
 
    /*******************************************************************************
@@ -102,9 +110,37 @@ public class PermissionManager
    /***************************************************************************
     **
     ***************************************************************************/
+   public void flushCacheForUpdatedRoleIds(Collection<Integer> roleIds)
+   {
+      if(CollectionUtils.nullSafeIsEmpty(roleIds))
+      {
+         return;
+      }
+
+      Set<Set<Integer>> roleIdsSetsToClear = new HashSet<>();
+      for(Integer roleId : roleIds)
+      {
+         if(roleIdToRoleSetIds.containsKey(roleId))
+         {
+            roleIdsSetsToClear.addAll(roleIdToRoleSetIds.get(roleId));
+         }
+      }
+
+      for(Set<Integer> roleIdsSet : roleIdsSetsToClear)
+      {
+         getEffectivePermissionsForRolesMemoization.clearKey(roleIdsSet);
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public void flushAllCache()
    {
       getEffectivePermissionsForUserMemoization.clear();
+      getEffectivePermissionsForRolesMemoization.clear();
    }
 
 
@@ -114,6 +150,11 @@ public class PermissionManager
     ***************************************************************************/
    public Set<String> getEffectivePermissionsForUser(Integer userId) throws QException
    {
+      if(userId == null)
+      {
+         return (Collections.emptySet());
+      }
+
       return (getEffectivePermissionsForUserMemoization.getResultThrowing(userId, u ->
          doGetEffectivePermissionsForUser(u)))
          .orElseThrow(() -> new QException("Could not get effective permissions for user with id: " + userId));
@@ -161,6 +202,57 @@ public class PermissionManager
       // union and return //
       //////////////////////
       permissionsFromRole.addAll(permissionsFromUser);
+      return (permissionsFromRole);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public Set<String> getEffectivePermissionsForRoles(Set<Integer> roleIds) throws QException
+   {
+      if(CollectionUtils.nullSafeIsEmpty(roleIds))
+      {
+         return (Collections.emptySet());
+      }
+
+      return (getEffectivePermissionsForRolesMemoization.getResultThrowing(roleIds, rs ->
+         doGetEffectivePermissionsForRoles(rs)))
+         .orElseThrow(() -> new QException("Could not get effective permissions for role ids: " + roleIds));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private Set<String> doGetEffectivePermissionsForRoles(Set<Integer> roleIds) throws QException
+   {
+      for(Integer roleId : roleIds)
+      {
+         roleIdToRoleSetIds.computeIfAbsent(roleId, k -> new HashSet<>());
+         roleIdToRoleSetIds.get(roleId).add(roleIds);
+      }
+
+      QInstance qInstance = QContext.getQInstance();
+
+      ////////////////////////////////
+      // query for role permissions //
+      ////////////////////////////////
+      QueryOutput roleQueryOutput = new QueryAction().execute(new QueryInput(Permission.TABLE_NAME)
+         .withQueryJoin(new QueryJoin(RolePermissionInt.TABLE_NAME)
+            .withBaseTableOrAlias(Permission.TABLE_NAME)
+            .withJoinMetaData(qInstance.getJoin(QJoinMetaData.makeInferredJoinName(Permission.TABLE_NAME, RolePermissionInt.TABLE_NAME))))
+
+         .withFilter(new QQueryFilter().withCriteria(RolePermissionInt.TABLE_NAME + ".roleId", QCriteriaOperator.IN, roleIds)));
+
+      List<QRecord> rolePermissions     = roleQueryOutput.getRecords();
+      Set<String>   permissionsFromRole = rolePermissions.stream().map(r -> r.getValueString("name")).collect(Collectors.toSet());
+
+      //////////////////////
+      // union and return //
+      //////////////////////
       return (permissionsFromRole);
    }
 }
