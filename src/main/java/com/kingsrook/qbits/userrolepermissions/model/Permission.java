@@ -65,6 +65,8 @@ public class Permission extends QRecordEntity
 {
    public static final String TABLE_NAME = "permission";
 
+
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -83,7 +85,7 @@ public class Permission extends QRecordEntity
             .withUniqueKey(new UniqueKey("name"))
             .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "objectType", "objectLabel", "description")))
             .withSection(new QFieldSection("roles", new QIcon().withName("diversity_3"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(Permission.TABLE_NAME, RolePermissionInt.TABLE_NAME)))
-            .withSection(new QFieldSection("users", new QIcon().withName("user"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(Permission.TABLE_NAME, UserPermissionInt.TABLE_NAME)))
+            .withSection(new QFieldSection("users", new QIcon().withName("person"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(Permission.TABLE_NAME, UserPermissionInt.TABLE_NAME)))
             .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
       }
    }
@@ -97,7 +99,7 @@ public class Permission extends QRecordEntity
    @QField(isEditable = false)
    private Instant modifyDate;
 
-   @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   @QField(isRequired = true, maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
    private String name;
 
    @QField(maxLength = 500, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
@@ -108,6 +110,7 @@ public class Permission extends QRecordEntity
 
    @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
    private String objectLabel;
+
 
 
    /*******************************************************************************
@@ -126,6 +129,7 @@ public class Permission extends QRecordEntity
    {
       populateFromQRecord(record);
    }
+
 
 
    /*******************************************************************************

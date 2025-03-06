@@ -86,7 +86,7 @@ public class Role extends QRecordEntity
             .withRecordLabelFields("name")
             .withUniqueKey(new UniqueKey("name"))
             .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "description")))
-            .withSection(new QFieldSection("person", new QIcon().withName("user"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(Role.TABLE_NAME, UserRoleInt.TABLE_NAME)))
+            .withSection(new QFieldSection("users", new QIcon().withName("person"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(Role.TABLE_NAME, UserRoleInt.TABLE_NAME)))
             .withSection(new QFieldSection("permissions", new QIcon().withName("key"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(Role.TABLE_NAME, RolePermissionInt.TABLE_NAME)))
             .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
             .withExposedJoin(new ExposedJoin().withJoinTable(Permission.TABLE_NAME).withJoinPath(List.of(
@@ -110,7 +110,7 @@ public class Role extends QRecordEntity
    @QField(isEditable = false)
    private Instant modifyDate;
 
-   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   @QField(isRequired = true, maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
    private String name;
 
    @QField(maxLength = 500, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)

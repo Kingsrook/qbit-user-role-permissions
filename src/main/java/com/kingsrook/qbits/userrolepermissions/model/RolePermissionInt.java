@@ -70,7 +70,7 @@ public class RolePermissionInt extends QRecordEntity
       {
          return table
             .withIcon(new QIcon().withName("lock_open"))
-            .withRecordLabelFormat("%s %s")
+            .withRecordLabelFormat("%s - %s")
             .withUniqueKey(new UniqueKey("permissionId", "roleId"))
             .withRecordLabelFields("permissionId", "roleId")
             .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "permissionId", "roleId")))
