@@ -53,7 +53,7 @@ public class UserRolePermissionsQBitProducer implements QBitProducer
       QBitMetaData qBitMetaData = new QBitMetaData()
          .withGroupId("com.kingsrook.qbits")
          .withArtifactId("user-role-permissions")
-         .withVersion("0.1.0")
+         .withVersion("0.1.2")
          .withNamespace(namespace)
          .withConfig(userRolePermissionsQBitConfig);
       qInstance.addQBit(qBitMetaData);

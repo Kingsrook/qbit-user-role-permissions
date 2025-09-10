@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
@@ -67,7 +68,11 @@ public class PermissionManager
    private Memoization<Set<Integer>, Set<String>> getEffectivePermissionsForRolesMemoization = new Memoization<Set<Integer>, Set<String>>()
       .withTimeout(Duration.ofMinutes(5));
 
+   private Memoization<Integer, Set<Integer>> getRoleIdsForUserMemoization = new Memoization<Integer, Set<Integer>>()
+      .withTimeout(Duration.ofMinutes(5));
+
    private Map<Integer, Set<Set<Integer>>> roleIdToRoleSetIds = Collections.synchronizedMap(new HashMap<>());
+
 
 
    /*******************************************************************************
@@ -102,6 +107,7 @@ public class PermissionManager
       for(Integer userId : CollectionUtils.nonNullCollection(userIds))
       {
          getEffectivePermissionsForUserMemoization.clearKey(userId);
+         getRoleIdsForUserMemoization.clearKey(userId);
       }
    }
 
@@ -255,4 +261,28 @@ public class PermissionManager
       //////////////////////
       return (permissionsFromRole);
    }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public Set<Integer> getRoleIdsForUser(Integer userId) throws QException
+   {
+      return (getRoleIdsForUserMemoization.getResultThrowing(userId, id ->
+         doGetRoleIdsForUser(id)))
+         .orElseThrow(() -> new QException("Could not get roles id for user " + userId));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private Set<Integer> doGetRoleIdsForUser(Integer userId) throws QException
+   {
+      List<QRecord> records = QueryAction.execute(UserRoleInt.TABLE_NAME, new QQueryFilter(new QFilterCriteria("userId", QCriteriaOperator.EQUALS, userId)));
+      return records.stream().map(r -> r.getValueInteger("roleId")).collect(Collectors.toSet());
+   }
+
 }
