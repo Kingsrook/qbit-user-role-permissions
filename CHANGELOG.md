@@ -2,7 +2,7 @@
 
 All notable changes to QBit User Role Permissions will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
@@ -38,12 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 📚 For Detailed Information
 
-**📖 [Complete Documentation Wiki](https://github.com/Kingsrook/qqq.wiki)** - Start here for comprehensive guides
-
-- **[🏠 Home](https://github.com/Kingsrook/qqq.wiki/Home)** - Project overview and quick start
-- **[🚀 Release Flow](https://github.com/Kingsrook/qqq.wiki/Release-Flow)** - Detailed release process
-- **[🏷️ Changelog & Tagging](https://github.com/Kingsrook/qqq.wiki/Changelog-and-Tagging)** - Commit conventions and release notes
-- **[🔧 Developer Onboarding](https://github.com/Kingsrook/qqq.wiki/Developer-Onboarding)** - Setup and contribution guide
+**📖 [Complete Documentation Wiki](https://github.com/Kingsrook/qqq/wiki)** - Start here for comprehensive guides
+- **[🏠 Home](https://github.com/Kingsrook/qqq/wiki/Home)** - Project overview and quick start
+- **[🚀 Release Flow](https://github.com/Kingsrook/qqq/wiki/Release-Flow)** - Detailed release process
+- **[🏷️ Changelog & Tagging](https://github.com/Kingsrook/qqq/wiki/Changelog-and-Tagging)** - Commit conventions and release notes
+- **[🔧 Developer Onboarding](https://github.com/Kingsrook/qqq/wiki/Developer-Onboarding)** - Setup and contribution guide
 
 ## 🔄 Version Compatibility
 
@@ -52,7 +51,7 @@ QBit User Role Permissions follows semantic versioning:
 - **MINOR** versions add new functionality (backward compatible)
 - **PATCH** versions contain bug fixes (backward compatible)
 
-For detailed compatibility information, see [QQQ Compatibility Matrix](https://github.com/Kingsrook/qqq.wiki/Compatibility-Matrix).
+For detailed compatibility information, see [QQQ Compatibility Matrix](https://github.com/Kingsrook/qqq/wiki/Compatibility-Matrix).
 
 ---
 
