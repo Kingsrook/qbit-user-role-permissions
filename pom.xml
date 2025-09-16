@@ -65,7 +65,7 @@
    </scm>
 
    <properties>
-      <revision>0.31.0-SNAPSHOT</revision>
+      <revision>0.31.0-RC.1</revision>
    </properties>
 
    <dependencies>
