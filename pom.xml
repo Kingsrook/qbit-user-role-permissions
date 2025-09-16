@@ -27,12 +27,42 @@
    <parent>
       <groupId>com.kingsrook</groupId>
       <artifactId>qbit-build-parent</artifactId>
-      <version>1.0.0</version>
+      <version>1.1.0</version>
    </parent>
 
    <groupId>com.kingsrook.qbits</groupId>
    <artifactId>qbit-user-role-permissions</artifactId>
    <version>${revision}</version>
+   <packaging>jar</packaging>
+
+   <name>QBit User Role Permissions</name>
+   <description>User role and permissions management module for the QBit framework</description>
+   <url>https://github.com/Kingsrook/qbit-user-role-permissions</url>
+
+   <licenses>
+      <license>
+         <name>GNU Affero General Public License v3.0</name>
+         <url>https://www.gnu.org/licenses/agpl-3.0.html</url>
+         <distribution>repo</distribution>
+      </license>
+   </licenses>
+
+   <developers>
+      <developer>
+         <id>kingsrook</id>
+         <name>Kingsrook Team</name>
+         <email>contact@kingsrook.com</email>
+         <organization>Kingsrook, LLC</organization>
+         <organizationUrl>https://kingsrook.com</organizationUrl>
+      </developer>
+   </developers>
+
+   <scm>
+      <connection>scm:git:git://github.com/Kingsrook/qbit-user-role-permissions.git</connection>
+      <developerConnection>scm:git:ssh://github.com:Kingsrook/qbit-user-role-permissions.git</developerConnection>
+      <url>https://github.com/Kingsrook/qbit-user-role-permissions</url>
+      <tag>HEAD</tag>
+   </scm>
 
    <properties>
       <revision>0.31.0-SNAPSHOT</revision>
